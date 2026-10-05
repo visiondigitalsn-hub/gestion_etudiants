@@ -1,4 +1,21 @@
-# Gestion des étudiants - Sprint 6 : migrations Alembic
+# Gestion des étudiants - Sprint 7 : architecture en couches
+
+Le code principal est dans `app/` : `main.py` assemble FastAPI, `database.py` gère la connexion et les sessions, `models.py` décrit les tables, `schemas.py` valide les entrées et réponses, `crud.py` manipule PostgreSQL, `routers/etudiants.py` gère HTTP et les erreurs. Les fichiers à la racine restent de petits adaptateurs pour les scripts historiques.
+
+```powershell
+pip install -r requirements.txt
+# Configurer PostgreSQL avec les variables décrites ci-dessous.
+python -m alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+Swagger : http://127.0.0.1:8000/docs. POST crée un étudiant (201) ; GET liste ou consulte (200) ; PUT remplace ses données (200) ; DELETE supprime (204, sans corps). GET, PUT et DELETE retournent 404 pour un identifiant absent. Pydantic retourne 422 pour une entrée invalide.
+
+Les écritures sont validées avec commit, et une erreur de transaction déclenche rollback. Chaque requête possède sa session, fermée après traitement. Les données restent dans PostgreSQL après le redémarrage de l'API. PUT conserve l'identifiant et remet le téléphone à NULL s'il est omis.
+
+Vérifications : `python verifier_sprint45.py`, `python verifier_sprint6.py` et `python verifier.py`. Les tests s'exécutent contre PostgreSQL réel. Les migrations demeurent dans `migrations/`, avec leur configuration dans `alembic/` et `alembic.ini`.
+
+## Migrations introduites au sprint 6
 
 Le schéma PostgreSQL est désormais versionné. `alembic/` contient l'environnement et le modèle de script ; `migrations/` contient les révisions `0001` (création sans téléphone) et `0002` (ajout du téléphone facultatif).
 

@@ -1,7 +1,7 @@
 """Migrations PostgreSQL utilisant la configuration du projet, sans secret en dur."""
 from alembic import context
-from database import Base, engine
-import models
+from app.database import Base, engine
+from app import models
 
 target_metadata = Base.metadata
 
