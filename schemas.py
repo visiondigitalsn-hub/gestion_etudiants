@@ -1,7 +1,7 @@
 """Modèle de validation demandé au sprint 2."""
 
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Etudiant(BaseModel):
@@ -13,4 +13,5 @@ class Etudiant(BaseModel):
 
 
 class EtudiantEnregistre(Etudiant):
+    model_config = ConfigDict(from_attributes=True)
     id: int

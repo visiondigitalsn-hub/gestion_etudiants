@@ -1,10 +1,13 @@
-"""Sprints 1 et 2 : routes et validation des données."""
+"""Sprints 4 et 5 : API et persistance PostgreSQL."""
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Depends
 from schemas import Etudiant, EtudiantEnregistre
-import data
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from database import get_db
+from models import Etudiant as EtudiantORM
 
-app = FastAPI(title="Gestion des étudiants - Sprint 3")
+app = FastAPI(title="Gestion des étudiants - Sprints 4 et 5")
 
 
 @app.get("/")
@@ -27,40 +30,46 @@ def addition(a: int, b: int):
     return {"resultat": a + b}
 
 
-def trouver_etudiant(id: int) -> EtudiantEnregistre:
-    for etudiant in data.etudiants:
-        if etudiant.id == id:
-            return etudiant
-    raise HTTPException(status_code=404, detail="Étudiant introuvable")
+def trouver_etudiant(id: int, db: Session) -> EtudiantORM:
+    etudiant = db.get(EtudiantORM, id)
+    if etudiant is None:
+        raise HTTPException(status_code=404, detail="Étudiant introuvable")
+    return etudiant
 
 
 @app.post("/etudiants", response_model=EtudiantEnregistre, status_code=201)
-async def ajouter_etudiant(etudiant: Etudiant):
-    nouvel_etudiant = EtudiantEnregistre(id=data.prochain_id, **etudiant.model_dump())
-    data.prochain_id += 1
-    data.etudiants.append(nouvel_etudiant)
-    return nouvel_etudiant
-
-
-@app.get("/etudiants", response_model=list[EtudiantEnregistre])
-async def lister_etudiants():
-    return data.etudiants
-
-
-@app.get("/etudiants/{id}", response_model=EtudiantEnregistre)
-async def lire_etudiant(id: int):
-    return trouver_etudiant(id)
-
-
-@app.put("/etudiants/{id}", response_model=EtudiantEnregistre)
-async def modifier_etudiant(id: int, etudiant: Etudiant):
-    ancien = trouver_etudiant(id)
-    nouveau = EtudiantEnregistre(id=id, **etudiant.model_dump())
-    data.etudiants[data.etudiants.index(ancien)] = nouveau
+def ajouter_etudiant(etudiant: Etudiant, db: Session = Depends(get_db)):
+    nouveau = EtudiantORM(**etudiant.model_dump())
+    db.add(nouveau)
+    db.commit()
+    db.refresh(nouveau)
     return nouveau
 
 
+@app.get("/etudiants", response_model=list[EtudiantEnregistre])
+def lister_etudiants(db: Session = Depends(get_db)):
+    return db.scalars(select(EtudiantORM).order_by(EtudiantORM.id)).all()
+
+
+@app.get("/etudiants/{id}", response_model=EtudiantEnregistre)
+def lire_etudiant(id: int, db: Session = Depends(get_db)):
+    return trouver_etudiant(id, db)
+
+
+@app.put("/etudiants/{id}", response_model=EtudiantEnregistre)
+def modifier_etudiant(id: int, etudiant: Etudiant, db: Session = Depends(get_db)):
+    actuel = trouver_etudiant(id, db)
+    for champ, valeur in etudiant.model_dump().items():
+        setattr(actuel, champ, valeur)
+    db.commit()
+    db.refresh(actuel)
+    return actuel
+
+
 @app.delete("/etudiants/{id}", status_code=204)
-async def supprimer_etudiant(id: int):
-    data.etudiants.remove(trouver_etudiant(id))
+def supprimer_etudiant(id: int, db: Session = Depends(get_db)):
+    db.delete(trouver_etudiant(id, db))
+    db.commit()
     return Response(status_code=204)
+
+
