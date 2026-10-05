@@ -1,80 +1,68 @@
-# Gestion des étudiants - Sprint 7 : architecture en couches
+# Gestion des étudiants - API finale 1.0.0
 
-Le code principal est dans `app/` : `main.py` assemble FastAPI, `database.py` gère la connexion et les sessions, `models.py` décrit les tables, `schemas.py` valide les entrées et réponses, `crud.py` manipule PostgreSQL, `routers/etudiants.py` gère HTTP et les erreurs. Les fichiers à la racine restent de petits adaptateurs pour les scripts historiques.
+API REST pédagogique pour inscrire, consulter, modifier et supprimer des étudiants. Les données sont conservées dans PostgreSQL. Le dernier sprint ajoute des validations, des erreurs explicites et une documentation utilisable par une autre équipe.
 
-```powershell
-pip install -r requirements.txt
-# Configurer PostgreSQL avec les variables décrites ci-dessous.
-python -m alembic upgrade head
-uvicorn app.main:app --reload
+## Objectifs et technologies
+
+- CRUD complet et stockage durable.
+- Validation des données avec Pydantic et email-validator.
+- Routes HTTP et documentation OpenAPI/Swagger avec FastAPI.
+- Modèles et transactions PostgreSQL avec SQLAlchemy.
+- Évolution du schéma avec Alembic.
+
+## Structure du projet
+
+```text
+gestion_etudiants/
+  app/
+    __init__.py
+    main.py
+    database.py
+    models.py
+    schemas.py
+    crud.py
+    routers/
+      __init__.py
+      etudiants.py
+  alembic/
+    env.py
+    script.py.mako
+  migrations/
+    0001_creer_etudiants.py
+    0002_ajouter_telephone.py
+  alembic.ini
+  requirements.txt
+  requirements-test.txt
+  verifier_sprint8.py
+  README.md
 ```
 
-Swagger : http://127.0.0.1:8000/docs. POST crée un étudiant (201) ; GET liste ou consulte (200) ; PUT remplace ses données (200) ; DELETE supprime (204, sans corps). GET, PUT et DELETE retournent 404 pour un identifiant absent. Pydantic retourne 422 pour une entrée invalide.
+Les modules à la racine main.py, database.py, models.py et schemas.py restent des adaptateurs pour les scripts historiques. Le code de l'application est défini dans app/.
 
-Les écritures sont validées avec commit, et une erreur de transaction déclenche rollback. Chaque requête possède sa session, fermée après traitement. Les données restent dans PostgreSQL après le redémarrage de l'API. PUT conserve l'identifiant et remet le téléphone à NULL s'il est omis.
+## Architecture
 
-Vérifications : `python verifier_sprint45.py`, `python verifier_sprint6.py` et `python verifier.py`. Les tests s'exécutent contre PostgreSQL réel. Les migrations demeurent dans `migrations/`, avec leur configuration dans `alembic/` et `alembic.ini`.
-
-## Migrations introduites au sprint 6
-
-Le schéma PostgreSQL est désormais versionné. `alembic/` contient l'environnement et le modèle de script ; `migrations/` contient les révisions `0001` (création sans téléphone) et `0002` (ajout du téléphone facultatif).
-
-## Nouvelle base vide
-
-Après création de la base et configuration des variables PostgreSQL décrites ci-dessous :
-
-```powershell
-pip install -r requirements.txt
-python -m alembic upgrade head
-python -m alembic current
-python -m alembic check
-uvicorn main:app --reload
+```mermaid
+flowchart TD
+    C["Client / Swagger"] --> R["Routes FastAPI"]
+    R --> P["Validation Pydantic"]
+    P --> K["CRUD"]
+    K --> O["SQLAlchemy"]
+    O --> D[(PostgreSQL)]
+    D --> J["Réponse JSON (FastAPI)"]
+    J --> C
+    A["Alembic : migrations"] -.-> D
 ```
 
-`initialiser_base.py` applique maintenant les migrations au lieu de `create_all()`.
+main.py assemble l'application ; database.py fournit et ferme les sessions ; models.py décrit les tables ; schemas.py définit les contrats de données ; crud.py traite les opérations persistantes ; routers/etudiants.py adapte leurs résultats en réponses HTTP. Une erreur pendant une écriture déclenche rollback.
 
-## Base existante des sprints 4 et 5
+## Installation
 
-Le téléphone était déjà présent. Ne pas rejouer une migration de création sur cette table. Le script suivant compare d'abord le schéma réel au modèle, refuse un écart ou une version intermédiaire, puis enregistre la version actuelle sans modifier les étudiants :
-
-```powershell
-python adopter_base_existante.py
-python -m alembic check
-```
-
-`stamp` mémorise une version ; il n'exécute pas les opérations de la migration. Ne pas l'utiliser à l'aveugle sur une base différente.
-
-## Cycle demandé dans le sprint 6
-
-Sur une base de démonstration vide séparée, appliquer `python -m alembic upgrade 0001`, insérer quelques étudiants sans téléphone, puis appliquer `python -m alembic upgrade head`. Les colonnes historiques et les lignes restent présentes ; le téléphone des lignes existantes vaut NULL.
-
-Les migrations ont été générées avec `revision --autogenerate` en faisant évoluer le modèle de sa version sans téléphone à sa version finale. Pour une prochaine évolution : modifier `models.py`, lancer `python -m alembic revision --autogenerate -m 'description'`, relire le script généré, puis appliquer `python -m alembic upgrade head`.
-
-## Tests et historique
+Prévoir Python 3.12 ou une version compatible et un serveur PostgreSQL. Installer PostgreSQL depuis https://www.postgresql.org/download/ ou utiliser une installation existante. Créer la base gestion_etudiants dans pgAdmin ou avec createdb.
 
 ```powershell
-pip install -r requirements-test.txt
-python verifier_sprint6.py
-python verifier_sprint45.py
-python verifier.py
-python -m alembic history
-```
-
-Le test du sprint 6 utilise un schéma temporaire unique et nettoie seulement ses propres tables. Il vérifie la première version, l'ajout nullable, la conservation des données, la révision finale, l'absence de différences et la répétition sans effet de `upgrade head`.
-
-L'autogénération ignore la table manuelle `etudiants_manuels`, qui reste en dehors du modèle ORM. Les fonctions `downgrade()` sont fournies, mais supprimer une colonne retire ses valeurs : un retour arrière ne remplace pas une sauvegarde.
-
-Le code et les tests sont sur GitHub ; le rapport et les captures sont fournis séparément pour le Drive.
-
-## Guide de connexion et exercices des sprints 4 et 5
-
-FastAPI, PostgreSQL et SQLAlchemy : les étudiants sont conservés dans la base après le redémarrage de l'API.
-
-## Préparer PostgreSQL
-
-Installer PostgreSQL depuis https://www.postgresql.org/download/windows/ et démarrer le serveur. Créer la base `gestion_etudiants` dans pgAdmin ou avec `createdb -U postgres gestion_etudiants`. Le mot de passe reste sur votre ordinateur.
-
-```powershell
+git clone https://github.com/visiondigitalsn-hub/gestion_etudiants.git
+cd gestion_etudiants
+git switch sprint-8
 python -m venv env
 .\env\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -86,47 +74,90 @@ $sprintDbSecret = Read-Host 'Mot de passe PostgreSQL' -AsSecureString
 $env:PGPASSWORD = [System.Net.NetworkCredential]::new('', $sprintDbSecret).Password
 ```
 
-`DATABASE_URL` peut remplacer ces variables. Ne pas publier sa valeur si elle contient un mot de passe.
+Une variable DATABASE_URL avec le pilote postgresql+psycopg peut remplacer ces variables. Ne publier aucun mot de passe ou URL contenant un secret.
 
-## Sprint 4 : connexion et table manuelle
-
-```powershell
-python preparer_sprint4.py
-```
-
-Le script crée `public.etudiants_manuels`. Cette table séparée permet de comparer le SQL manuel et la génération ORM sans écraser de données.
-
-## Sprint 5 : table ORM, insertion, lecture et API
+### Nouvelle base vide
 
 ```powershell
-python initialiser_base.py
-python demo_orm.py
-uvicorn main:app --reload
+python -m alembic upgrade head
+python -m alembic current
+python -m alembic check
 ```
 
-Swagger : http://127.0.0.1:8000/docs
+### Base des sprints 4 et 5 sans historique Alembic
 
-La table `public.etudiants` possède `id`, `nom`, `prenom`, `age`, `email`. Le téléphone facultatif du sprint 2 est conservé. Pydantic valide les entrées ; SQLAlchemy représente les lignes PostgreSQL.
+Le téléphone y était déjà présent. L'adoption compare le schéma au modèle avant d'enregistrer la version, sans modifier les lignes :
 
-Les routes CRUD restent disponibles : POST `/etudiants` (201), GET `/etudiants`, GET et PUT `/etudiants/{id}` (200), DELETE `/etudiants/{id}` (204). Un identifiant absent donne 404 et une entrée invalide 422. PUT remplace tous les champs, avec téléphone nul s'il est omis.
+```powershell
+python adopter_base_existante.py
+python -m alembic check
+```
 
-## Tests sur PostgreSQL réel
+Ne pas utiliser stamp sans cette vérification. Une base déjà versionnée se met à jour avec upgrade head. Les validations du sprint 8 portent sur le contrat API : le modèle SQL reste identique et ne demande pas de troisième migration.
+
+## Lancement et Swagger
+
+```powershell
+uvicorn app.main:app --reload
+```
+
+- Swagger : http://127.0.0.1:8000/docs
+- OpenAPI : http://127.0.0.1:8000/openapi.json
+- Accueil : http://127.0.0.1:8000/
+
+Le titre, la description, la version 1.0.0, les descriptions de modèles, les exemples et les réponses 404 sont présents dans Swagger.
+
+## Contrat des données
+
+| Champ | Règle |
+|---|---|
+| nom | Au moins 2 caractères après retrait des espaces extérieurs. |
+| prenom | Au moins 2 caractères après retrait des espaces extérieurs. |
+| age | Entier strictement positif ; 0 et les valeurs négatives sont refusés. |
+| email | Adresse de format valide ; aucune preuve de réception ni de propriété de la boîte. |
+| telephone | Facultatif ; valeur null par défaut, sans format imposé. |
+| id | Entier strictement positif dans les chemins ; attribué par PostgreSQL. |
+
+Exemple de corps POST ou PUT :
+
+```json
+{
+  "nom": "Exemple",
+  "prenom": "Alice",
+  "age": 23,
+  "email": "alice@example.com",
+  "telephone": null
+}
+```
+
+PUT remplace toutes les informations en conservant l'identifiant. Les champs obligatoires sont requis et le téléphone omis devient null.
+
+## Routes et erreurs
+
+| Méthode et chemin | Succès | Erreurs attendues |
+|---|---|---|
+| POST /etudiants | 201, étudiant créé | 422 si données invalides |
+| GET /etudiants | 200, liste | Liste vide si aucun étudiant |
+| GET /etudiants/{id} | 200 | 404 absent, 422 identifiant invalide |
+| PUT /etudiants/{id} | 200 | 404 absent, 422 identifiant ou corps invalide |
+| DELETE /etudiants/{id} | 204, sans corps | 404 absent, 422 identifiant invalide |
+
+Une ressource absente retourne {"detail":"Étudiant introuvable"}. La validation retourne une liste detail avec le champ concerné dans loc, le message dans msg et le type de problème. Corriger les données indiquées avant de renvoyer la requête. Un email invalide, un âge négatif et un nom vide doivent retourner 422 sans écrire en base.
+
+## Tests fonctionnels
 
 ```powershell
 pip install -r requirements-test.txt
-python verifier.py
+python verifier_sprint8.py
 python verifier_sprint45.py
+python verifier_sprint6.py
+python verifier.py
 ```
 
-Les tests vérifient la table, le CRUD, la validation, la persistance entre sessions et le rollback sans commit. Ils créent des données fictives et retirent uniquement celles-ci. Les tests historiques des sprints 2 et 3 restent sur leurs branches.
+Les tests utilisent PostgreSQL réel. Les nouveaux cas vérifient les rejets POST/PUT sans écriture, les identifiants invalides, les ressources absentes, le CRUD, la sérialisation et les métadonnées OpenAPI. Ils retirent seulement leurs propres étudiants fictifs. L'audit initial signale les données historiques incompatibles sans les modifier.
 
-## Fichiers
+## Livraison et démonstration
 
-- `main.py` : routes FastAPI et session par requête.
-- `database.py` : Engine, SessionLocal, Base et fermeture des sessions.
-- `models.py` : modèle ORM Etudiant.
-- `schemas.py` : validation Pydantic et sérialisation ORM.
-- `demo_orm.py` : insertion idempotente de deux étudiants fictifs et lecture.
-- `preuve_postgresql.py` : export local de résultats SQL pour contrôle.
+Le code, les tests et ce guide sont sur GitHub. Les rapports et captures sont fournis séparément pour le Drive du professeur. Le support de démonstration accompagne une présentation de 12 minutes : problème, architecture, fichiers, requête complète, technologies, essais Swagger, difficultés et améliorations.
 
-Les rapports et captures sont fournis séparément pour le Drive du professeur.
+Cette API pédagogique est prévue pour une démonstration locale. Les prochaines évolutions proposées sont l'authentification, les droits d'accès, la pagination, des contraintes métier SQL, les sauvegardes et le déploiement sécurisé.
