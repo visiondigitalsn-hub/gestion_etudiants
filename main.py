@@ -1,8 +1,9 @@
-"""Sprint 1 : découverte de FastAPI."""
+"""Sprints 1 et 2 : routes et validation des données."""
 
 from fastapi import FastAPI
+from schemas import Etudiant
 
-app = FastAPI(title="Gestion des étudiants - Sprint 1")
+app = FastAPI(title="Gestion des étudiants - Sprints 1 et 2")
 
 
 @app.get("/")
@@ -23,3 +24,9 @@ def bonjour_personnalise(nom: str):
 @app.get("/addition/{a}/{b}")
 def addition(a: int, b: int):
     return {"resultat": a + b}
+
+
+@app.post("/etudiants", response_model=Etudiant)
+def recevoir_etudiant(etudiant: Etudiant):
+    """Retourner les données validées, sans stockage à ce stade."""
+    return etudiant

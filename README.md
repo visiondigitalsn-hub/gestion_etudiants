@@ -1,6 +1,38 @@
-# Gestion des étudiants - Sprint 1
+# Gestion des étudiants - Sprints 1 et 2
 
 Application d'initiation avec les quatre routes demandées. Les réponses aux questions sont dans REPONSES.md. Le rapport est un document distinct.
+
+Le sprint 2 ajoute `schemas.py` et `POST /etudiants`. Les réponses, le rapport et les résultats du sprint 2 se trouvent dans REPONSES_SPRINT2.md, RAPPORT_SPRINT2.md et VALIDATION_SPRINT2.md.
+
+## Tester le sprint 2 dans Swagger
+
+Ouvrir `/docs`, déplier **POST /etudiants**, cliquer sur **Try it out**, coller l’un des JSON ci-dessous, puis **Execute**.
+
+```json
+{"nom":"Fall","prenom":"Mamadou","age":23,"email":"mamadou@gmail.com"}
+```
+
+Réponse attendue HTTP 200 : mêmes données avec `"telephone": null`.
+
+```json
+{"nom":"Fall","prenom":"Mamadou","age":"vingt trois","email":"mamadou@gmail.com"}
+```
+
+Réponse attendue HTTP 422, erreur sur age.
+
+```json
+{"nom":"Fall","prenom":"Mamadou","age":23}
+```
+
+Réponse attendue HTTP 422, email obligatoire manquant.
+
+```json
+{"nom":"Ali","prenom":"Diop","age":22,"email":"ali@gmail.com","telephone":"771234567"}
+```
+
+Réponse attendue HTTP 200. Retirer telephone, puis tester à nouveau : HTTP 200 et telephone null.
+
+Le modèle demandé valide les types : `email: str` ne vérifie pas le format d’une adresse. Aucun stockage d’étudiants n’est implémenté à ce stade ; la route retourne les données validées.
 
 ## Installation standard sous Windows PowerShell
 
