@@ -29,8 +29,8 @@ def verifier():
         schema = client.get("/openapi.json")
         assert schema.status_code == 200
         chemins = schema.json()["paths"]
-        assert set(chemins) == {"/", "/bonjour", "/bonjour/{nom}", "/addition/{a}/{b}", "/etudiants"}
-        assert all("get" in operation for chemin, operation in chemins.items() if chemin != "/etudiants")
+        assert set(chemins) == {"/", "/bonjour", "/bonjour/{nom}", "/addition/{a}/{b}", "/etudiants", "/etudiants/{id}"}
+        assert all("get" in operation for operation in chemins.values())
         assert "post" in chemins["/etudiants"]
     with TestClient(FastAPI()) as client:
         assert client.get("/").status_code == 404

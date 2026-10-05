@@ -10,3 +10,7 @@ class Etudiant(BaseModel):
     age: int
     email: str
     telephone: Optional[str] = None
+
+
+class EtudiantEnregistre(Etudiant):
+    id: int
