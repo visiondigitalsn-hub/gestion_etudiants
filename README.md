@@ -1,4 +1,55 @@
-# Gestion des étudiants — Sprints 4 et 5
+# Gestion des étudiants - Sprint 6 : migrations Alembic
+
+Le schéma PostgreSQL est désormais versionné. `alembic/` contient l'environnement et le modèle de script ; `migrations/` contient les révisions `0001` (création sans téléphone) et `0002` (ajout du téléphone facultatif).
+
+## Nouvelle base vide
+
+Après création de la base et configuration des variables PostgreSQL décrites ci-dessous :
+
+```powershell
+pip install -r requirements.txt
+python -m alembic upgrade head
+python -m alembic current
+python -m alembic check
+uvicorn main:app --reload
+```
+
+`initialiser_base.py` applique maintenant les migrations au lieu de `create_all()`.
+
+## Base existante des sprints 4 et 5
+
+Le téléphone était déjà présent. Ne pas rejouer une migration de création sur cette table. Le script suivant compare d'abord le schéma réel au modèle, refuse un écart ou une version intermédiaire, puis enregistre la version actuelle sans modifier les étudiants :
+
+```powershell
+python adopter_base_existante.py
+python -m alembic check
+```
+
+`stamp` mémorise une version ; il n'exécute pas les opérations de la migration. Ne pas l'utiliser à l'aveugle sur une base différente.
+
+## Cycle demandé dans le sprint 6
+
+Sur une base de démonstration vide séparée, appliquer `python -m alembic upgrade 0001`, insérer quelques étudiants sans téléphone, puis appliquer `python -m alembic upgrade head`. Les colonnes historiques et les lignes restent présentes ; le téléphone des lignes existantes vaut NULL.
+
+Les migrations ont été générées avec `revision --autogenerate` en faisant évoluer le modèle de sa version sans téléphone à sa version finale. Pour une prochaine évolution : modifier `models.py`, lancer `python -m alembic revision --autogenerate -m 'description'`, relire le script généré, puis appliquer `python -m alembic upgrade head`.
+
+## Tests et historique
+
+```powershell
+pip install -r requirements-test.txt
+python verifier_sprint6.py
+python verifier_sprint45.py
+python verifier.py
+python -m alembic history
+```
+
+Le test du sprint 6 utilise un schéma temporaire unique et nettoie seulement ses propres tables. Il vérifie la première version, l'ajout nullable, la conservation des données, la révision finale, l'absence de différences et la répétition sans effet de `upgrade head`.
+
+L'autogénération ignore la table manuelle `etudiants_manuels`, qui reste en dehors du modèle ORM. Les fonctions `downgrade()` sont fournies, mais supprimer une colonne retire ses valeurs : un retour arrière ne remplace pas une sauvegarde.
+
+Le code et les tests sont sur GitHub ; le rapport et les captures sont fournis séparément pour le Drive.
+
+## Guide de connexion et exercices des sprints 4 et 5
 
 FastAPI, PostgreSQL et SQLAlchemy : les étudiants sont conservés dans la base après le redémarrage de l'API.
 

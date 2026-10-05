@@ -1,4 +1,4 @@
-"""Sprints 4 et 5 : API et persistance PostgreSQL."""
+"""Sprint 6 : API PostgreSQL avec un schéma versionné par Alembic."""
 
 from fastapi import FastAPI, HTTPException, Response, Depends
 from schemas import Etudiant, EtudiantEnregistre
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Etudiant as EtudiantORM
 
-app = FastAPI(title="Gestion des étudiants - Sprints 4 et 5")
+app = FastAPI(title="Gestion des étudiants - Sprint 6")
 
 
 @app.get("/")
